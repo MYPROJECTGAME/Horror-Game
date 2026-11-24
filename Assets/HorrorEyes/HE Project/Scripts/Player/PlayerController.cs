@@ -310,36 +310,67 @@ public class PlayerController : MonoBehaviour {
 
     private void CameraRotation()
     {
-        float rawMouseX = CrossPlatformInputManager.GetAxis("Mouse X");
-        float rawMouseY = CrossPlatformInputManager.GetAxis("Mouse Y");
-
-        if (Mathf.Approximately(rawMouseX, 0f)) rawMouseX = Input.GetAxis("Mouse X");
-        if (Mathf.Approximately(rawMouseY, 0f)) rawMouseY = Input.GetAxis("Mouse Y");
-
+        bool isMobile = Application.isMobilePlatform || (gameControll != null && gameControll.m_mobileTouchInput);
+        float mouseX = 0f;
+        float mouseY = 0f;
         float dt = Time.deltaTime;
 
-        // Target rotation rate
-        float targetMouseX = rawMouseX * (mouseSensetivity * 2f);
-        float targetMouseY = rawMouseY * (mouseSensetivity * 2f);
-
-        // Smooth filter to eliminate jitter and micro-stutters
-        if (lookSmoothFactor > 0f)
+        if (isMobile)
         {
-            float t = Mathf.Clamp01(dt * lookSmoothFactor);
-            m_currentMouseX = Mathf.Lerp(m_currentMouseX, targetMouseX, t);
-            m_currentMouseY = Mathf.Lerp(m_currentMouseY, targetMouseY, t);
+            // === MOBILE CAMERA ROTATION ===
+            // Read strictly from touch input virtual axes (NEVER fallback to Input.GetAxis to prevent pulling back)
+            float touchX = CrossPlatformInputManager.GetAxis("Mouse X");
+            float touchY = CrossPlatformInputManager.GetAxis("Mouse Y");
+
+            // Balanced mobile sensitivity (default mouseSensetivity is ~100-200)
+            float sensMultiplier = (mouseSensetivity > 0f) ? (mouseSensetivity / 100f) : 1f;
+
+            // Direct smooth rotation (0.16f is the ideal responsive sweet spot)
+            float targetTouchX = touchX * 0.16f * sensMultiplier;
+            float targetTouchY = touchY * 0.16f * sensMultiplier;
+
+            // Moderate smoothing: eliminates jitter without any rubber-band lag
+            m_currentMouseX = Mathf.Lerp(m_currentMouseX, targetTouchX, Mathf.Clamp01(dt * 35f));
+            m_currentMouseY = Mathf.Lerp(m_currentMouseY, targetTouchY, Mathf.Clamp01(dt * 35f));
+
+            if (Mathf.Abs(m_currentMouseX) < 0.0001f) m_currentMouseX = 0f;
+            if (Mathf.Abs(m_currentMouseY) < 0.0001f) m_currentMouseY = 0f;
+
+            mouseX = m_currentMouseX;
+            mouseY = m_currentMouseY;
         }
         else
         {
-            m_currentMouseX = targetMouseX;
-            m_currentMouseY = targetMouseY;
+            // === PC CAMERA ROTATION (UNTOUCHED) ===
+            float rawMouseX = CrossPlatformInputManager.GetAxis("Mouse X");
+            float rawMouseY = CrossPlatformInputManager.GetAxis("Mouse Y");
+
+            if (Mathf.Approximately(rawMouseX, 0f)) rawMouseX = Input.GetAxis("Mouse X");
+            if (Mathf.Approximately(rawMouseY, 0f)) rawMouseY = Input.GetAxis("Mouse Y");
+
+            // Target rotation rate
+            float targetMouseX = rawMouseX * (mouseSensetivity * 2f);
+            float targetMouseY = rawMouseY * (mouseSensetivity * 2f);
+
+            // Smooth filter to eliminate jitter and micro-stutters
+            if (lookSmoothFactor > 0f)
+            {
+                float t = Mathf.Clamp01(dt * lookSmoothFactor);
+                m_currentMouseX = Mathf.Lerp(m_currentMouseX, targetMouseX, t);
+                m_currentMouseY = Mathf.Lerp(m_currentMouseY, targetMouseY, t);
+            }
+            else
+            {
+                m_currentMouseX = targetMouseX;
+                m_currentMouseY = targetMouseY;
+            }
+
+            if (Mathf.Abs(m_currentMouseX) < 0.001f) m_currentMouseX = 0f;
+            if (Mathf.Abs(m_currentMouseY) < 0.001f) m_currentMouseY = 0f;
+
+            mouseX = m_currentMouseX * dt;
+            mouseY = m_currentMouseY * dt;
         }
-
-        if (Mathf.Abs(m_currentMouseX) < 0.001f) m_currentMouseX = 0f;
-        if (Mathf.Abs(m_currentMouseY) < 0.001f) m_currentMouseY = 0f;
-
-        float mouseX = m_currentMouseX * dt;
-        float mouseY = m_currentMouseY * dt;
 
         // Pitch clamp (clean, smooth, no snapping)
         clampX -= mouseY;

@@ -28,8 +28,6 @@ namespace UnityStandardAssets.CrossPlatformInput
         public string verticalAxisName = "Mouse Y";
         public float Xsensitivity = 1f;
         public float Ysensitivity = 1f;
-        [Tooltip("Smoothing factor for touch swipe")]
-        public float smoothing = 30f;
         public bool invertY = false;
 
         private CrossPlatformInputManager.VirtualAxis m_HorizontalVirtualAxis;
@@ -39,11 +37,7 @@ namespace UnityStandardAssets.CrossPlatformInput
         private bool m_Dragging;
         private int m_PointerId = -1;
 
-        private Vector2 m_CurrentFrameDelta;
-        private Vector2 m_SmoothVelocity;
-
-        // Base sensitivity scale calibrated for PlayerController
-        private const float SENSITIVITY_SCALE = 0.0022f;
+        private Vector2 m_DeltaThisFrame;
 
         void OnEnable()
         {
@@ -88,8 +82,7 @@ namespace UnityStandardAssets.CrossPlatformInput
             {
                 m_Dragging = true;
                 m_PointerId = data.pointerId;
-                m_CurrentFrameDelta = Vector2.zero;
-                m_SmoothVelocity = Vector2.zero;
+                m_DeltaThisFrame = Vector2.zero;
             }
         }
 
@@ -97,7 +90,7 @@ namespace UnityStandardAssets.CrossPlatformInput
         {
             if (m_Dragging && data.pointerId == m_PointerId)
             {
-                m_CurrentFrameDelta += data.delta;
+                m_DeltaThisFrame += data.delta;
             }
         }
 
@@ -107,35 +100,25 @@ namespace UnityStandardAssets.CrossPlatformInput
             {
                 m_Dragging = false;
                 m_PointerId = -1;
-                m_CurrentFrameDelta = Vector2.zero;
+                m_DeltaThisFrame = Vector2.zero;
+
+                if (m_UseX && m_HorizontalVirtualAxis != null)
+                {
+                    m_HorizontalVirtualAxis.Update(0f);
+                }
+                if (m_UseY && m_VerticalVirtualAxis != null)
+                {
+                    m_VerticalVirtualAxis.Update(0f);
+                }
             }
         }
 
         void Update()
         {
-            float dt = Mathf.Max(Time.deltaTime, 0.0001f);
+            float outX = m_DeltaThisFrame.x * Xsensitivity;
+            float outY = m_DeltaThisFrame.y * Ysensitivity * (invertY ? -1f : 1f);
 
-            // Convert frame delta into pixels per second velocity
-            Vector2 targetVelocity = m_Dragging ? (m_CurrentFrameDelta / dt) : Vector2.zero;
-            m_CurrentFrameDelta = Vector2.zero;
-
-            if (smoothing > 0f)
-            {
-                float t = Mathf.Clamp01(dt * smoothing);
-                m_SmoothVelocity = Vector2.Lerp(m_SmoothVelocity, targetVelocity, t);
-            }
-            else
-            {
-                m_SmoothVelocity = targetVelocity;
-            }
-
-            if (!m_Dragging && m_SmoothVelocity.sqrMagnitude < 1f)
-            {
-                m_SmoothVelocity = Vector2.zero;
-            }
-
-            float outX = m_SmoothVelocity.x * SENSITIVITY_SCALE * Xsensitivity;
-            float outY = m_SmoothVelocity.y * SENSITIVITY_SCALE * Ysensitivity * (invertY ? -1f : 1f);
+            m_DeltaThisFrame = Vector2.zero;
 
             if (m_UseX && m_HorizontalVirtualAxis != null)
             {
@@ -160,8 +143,7 @@ namespace UnityStandardAssets.CrossPlatformInput
             }
             m_Dragging = false;
             m_PointerId = -1;
-            m_CurrentFrameDelta = Vector2.zero;
-            m_SmoothVelocity = Vector2.zero;
+            m_DeltaThisFrame = Vector2.zero;
         }
     }
 }
