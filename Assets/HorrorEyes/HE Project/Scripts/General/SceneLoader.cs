@@ -17,10 +17,11 @@ public class SceneLoader : MonoBehaviour {
     {
         if (!isStartScene)
         {
-            sceneName = PlayerPrefs.GetString("GameLevel");
-        }else
+            sceneName = PlayerPrefs.GetString("GameLevel", "MainMenu");
+        }
+        else
         {
-            sceneName = mainMenuSceneName;
+            sceneName = string.IsNullOrEmpty(mainMenuSceneName) ? "MainMenu" : mainMenuSceneName;
         }
     }
 
@@ -31,14 +32,27 @@ public class SceneLoader : MonoBehaviour {
 
     IEnumerator SceneLoad()
     {
-        AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName);
-        while (!operation.isDone)
+        if (string.IsNullOrEmpty(sceneName))
         {
-            float progress = operation.progress / 0.9f;
-            loadingBar.fillAmount = progress;
-            yield return null;
+            sceneName = "MainMenu";
         }
 
+        AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName);
+        if (operation == null)
+        {
+            SceneManager.LoadScene(sceneName);
+            yield break;
+        }
+
+        while (!operation.isDone)
+        {
+            float progress = Mathf.Clamp01(operation.progress / 0.9f);
+            if (loadingBar != null)
+            {
+                loadingBar.fillAmount = progress;
+            }
+            yield return null;
+        }
     }
 
 }

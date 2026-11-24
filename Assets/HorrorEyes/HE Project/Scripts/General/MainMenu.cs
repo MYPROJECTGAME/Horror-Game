@@ -104,21 +104,42 @@ public class MainMenu : MonoBehaviour {
         if (PlayerPrefs.HasKey("Volume"))
         {
             AudioListener.volume = PlayerPrefs.GetFloat("Volume");
-            volumeSlider.value = PlayerPrefs.GetFloat("Volume");
+            if (volumeSlider != null) volumeSlider.value = PlayerPrefs.GetFloat("Volume");
         }
         else
         {
             AudioListener.volume = 1f;
-            volumeSlider.value = 1f;
+            if (volumeSlider != null) volumeSlider.value = 1f;
         }
 
         if (PlayerPrefs.HasKey("Sensitivity"))
         {         
-            sensitivitySlider.value = PlayerPrefs.GetFloat("Sensitivity");
+            if (sensitivitySlider != null) sensitivitySlider.value = PlayerPrefs.GetFloat("Sensitivity");
         }
         else
         {
-            sensitivitySlider.value = sensitivitySlider.maxValue / 2f;
+            if (sensitivitySlider != null) sensitivitySlider.value = sensitivitySlider.maxValue / 2f;
+        }
+
+        // Unlock all levels and enemy characters
+        if (m_levels != null)
+        {
+            for (int i = 0; i < m_levels.Length; i++)
+            {
+                PlayerPrefs.SetInt(m_levels[i].m_sceneName + "LockState", 1);
+                m_levels[i].m_lockByDefault = false;
+                m_levels[i].m_lockState = 1;
+            }
+        }
+
+        if (m_enemys != null)
+        {
+            for (int i = 0; i < m_enemys.Length; i++)
+            {
+                PlayerPrefs.SetInt("Enemy" + m_enemys[i].m_enemyModeId + "LockState", 1);
+                m_enemys[i].m_lockByDefault = false;
+                m_enemys[i].m_lockState = 1;
+            }
         }
 
         GameSetup();
@@ -287,77 +308,20 @@ public class MainMenu : MonoBehaviour {
 
         m_xp_text.text = m_XP.ToString() + " XP";
 
-        if (PlayerPrefs.HasKey(m_levels[levelID].m_sceneName + "LockState"))
-        {
-            m_levelLockState = PlayerPrefs.GetInt(m_levels[levelID].m_sceneName + "LockState");
-            m_levels[levelID].m_lockState = m_levelLockState;
-
-            switch (m_levelLockState)
-            {
-                case 0:
-                    m_buyLevelIconGO.SetActive(true);
-                    m_selectedLevelIsLocked = true;
-                    break;
-                case 1:
-                    m_buyLevelIconGO.SetActive(false);
-                    m_selectedLevelIsLocked = false;
-                    break;
-            }
-        }
-        else
-        {
-            if (m_levels[levelID].m_lockByDefault)
-            {
-                m_selectedLevelIsLocked = true;
-                m_buyLevelIconGO.SetActive(true);
-            }
-            else
-            {
-                m_buyLevelIconGO.SetActive(false);
-                m_selectedLevelIsLocked = false;
-            }
-        }
-
-
-
-        if (PlayerPrefs.HasKey("Enemy" + m_enemys[enemyID].m_enemyModeId + "LockState"))
-        {
-            m_enemyLockState = PlayerPrefs.GetInt("Enemy" + m_enemys[enemyID].m_enemyModeId + "LockState");
-            m_enemys[enemyID].m_lockState = m_enemyLockState;
-            switch (m_enemyLockState)
-            {
-                case 0:
-                    m_buyEnemyIconGO.SetActive(true);
-                    m_selectedEnemyIsLocked = true;
-                    break;
-                case 1:
-                    m_buyEnemyIconGO.SetActive(false);
-                    m_selectedEnemyIsLocked = false;
-                    break;
-            }
-        }
-        else
-        {
-            if (m_enemys[enemyID].m_lockByDefault)
-            {
-                m_buyEnemyIconGO.SetActive(true);
-                m_selectedEnemyIsLocked = true;
-            }
-            else
-            {
-                m_selectedEnemyIsLocked = false;
-                m_buyEnemyIconGO.SetActive(false);
-            }
-        }
+        // All levels and enemy characters unlocked
+        m_selectedLevelIsLocked = false;
+        if (m_buyLevelIconGO != null) m_buyLevelIconGO.SetActive(false);
+        m_selectedEnemyIsLocked = false;
+        if (m_buyEnemyIconGO != null) m_buyEnemyIconGO.SetActive(false);
 
         if (m_selectedLevelIsLocked || m_selectedEnemyIsLocked)
         {
-            m_lockImageGameObject.SetActive(true);
-            m_playButton.interactable = false;
+            if (m_lockImageGameObject != null) m_lockImageGameObject.SetActive(true);
+            if (m_playButton != null) m_playButton.interactable = false;
         }else
         {
-            m_lockImageGameObject.SetActive(false);
-            m_playButton.interactable = true;
+            if (m_lockImageGameObject != null) m_lockImageGameObject.SetActive(false);
+            if (m_playButton != null) m_playButton.interactable = true;
         }
 
         m_levelPriceText.text = m_levels[levelID].m_price.ToString();

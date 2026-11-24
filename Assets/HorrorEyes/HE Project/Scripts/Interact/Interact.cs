@@ -72,9 +72,9 @@ public class Interact : MonoBehaviour {
 
             if (!m_gameController.m_mobileTouchInput)
             {
-                if (CrossPlatformInputManager.GetButtonDown("Interact"))
+                if (CrossPlatformInputManager.GetButtonDown("Interact") || Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.F))
                 {
-                    if (EventSystem.current.IsPointerOverGameObject())    // is the touch on the GUI
+                    if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())    // is the touch on the GUI
                     {
                         return;
                     }

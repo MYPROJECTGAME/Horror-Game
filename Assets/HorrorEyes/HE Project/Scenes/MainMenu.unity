@@ -1072,9 +1072,9 @@ MonoBehaviour:
     m_description: Demo level of school. You can replace it or make a big school
       level!
     m_levelShowGameobject: {fileID: 8724423987122817380}
-    m_lockByDefault: 1
-    m_lockState: 0
-    m_price: 3000
+    m_lockByDefault: 0
+    m_lockState: 1
+    m_price: 0
   m_enemys:
   - name: Dead Woman
     m_enemyModeId: 0
@@ -1091,18 +1091,18 @@ MonoBehaviour:
       a hospital, but now it devours corpses and everyone it meets on its way!"
     m_enemyShowGameobject:
     - {fileID: 446931274}
-    m_lockByDefault: 1
-    m_lockState: 0
-    m_price: 1000
+    m_lockByDefault: 0
+    m_lockState: 1
+    m_price: 0
   - name: Double horror
     m_enemyModeId: 2
     m_description: "\rTwo monsters, one way out!"
     m_enemyShowGameobject:
     - {fileID: 1931747297}
     - {fileID: 446931274}
-    m_lockByDefault: 1
-    m_lockState: 0
-    m_price: 3000
+    m_lockByDefault: 0
+    m_lockState: 1
+    m_price: 0
   m_difficults:
   - name: Easy
     m_difficultId: 0
@@ -3549,7 +3549,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &641815790
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10081,7 +10081,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1913353615
 RectTransform:
   m_ObjectHideFlags: 0
@@ -11686,7 +11686,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2073119642
 RectTransform:
   m_ObjectHideFlags: 0

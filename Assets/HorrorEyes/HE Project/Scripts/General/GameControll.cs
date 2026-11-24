@@ -18,7 +18,8 @@ public class GameControll : MonoBehaviour, IUnityAdsListener
     public ItemsSpawner m_spawner;
     [HideInInspector]
     public Inventory inventory;
-    private bool pause;
+    [HideInInspector]
+    public bool pause;
     public string m_loadingSceneName;
     public string m_mainMenuSceneName;
     public List<DifficultyModes> m_difficultyModes = new List<DifficultyModes>();
@@ -100,6 +101,11 @@ public class GameControll : MonoBehaviour, IUnityAdsListener
 
     private void Awake()
     {
+        if (GetComponent<DualPlatformHUDManager>() == null)
+        {
+            gameObject.AddComponent<DualPlatformHUDManager>();
+        }
+
         enemy.Clear();
         Enemy[] enm = FindObjectsOfType<Enemy>();
         enemy.AddRange(enm);
@@ -126,18 +132,18 @@ public class GameControll : MonoBehaviour, IUnityAdsListener
 
     private void Start()
     {
-        Advertisement.AddListener(this);
-        Advertisement.Initialize(gameId, testMode);
-
-        ShowAd();
-
-
+        // Ads disabled
+        if (m_eyesCount == 0)
+        {
+            m_eyesCount = 5; // Give player 5 eye potions to start with
+        }
         m_spawner.SpawnPictures(m_needPicturesCount);
         m_spawner.SpawnPills();
         Time.timeScale = 1.0f;
         pausePanel.SetActive(false);
         enemyEyesControllPanel.SetActive(false);
         m_currentPapersCountText.text = m_currenPicturestCount.ToString() + "/" + m_needPicturesCount.ToString();
+        if (m_eyesPillsCountText != null) m_eyesPillsCountText.text = m_eyesCount.ToString();
 
     }
 
@@ -503,11 +509,15 @@ public class GameControll : MonoBehaviour, IUnityAdsListener
 
     private void ControllGame()
     {
-        if(CrossPlatformInputManager.GetButtonDown("Pause"))
+        if(CrossPlatformInputManager.GetButtonDown("Pause") || Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
         {
             PauseGame();
         }
 
+        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space))
+        {
+            SetEnemyEyes();
+        }
 
         if (m_isOnEnemyEyesView)
         {
@@ -676,8 +686,6 @@ public class GameControll : MonoBehaviour, IUnityAdsListener
     {
        
         gameOverPanel.SetActive(true);
-
-        ShowAd();
     }
 
     public void GameWin()
@@ -909,23 +917,12 @@ public class GameControll : MonoBehaviour, IUnityAdsListener
 
     public void ShowAd()
     {
-        if (Advertisement.IsReady())
-        {
-            Advertisement.Show();
-        }
+        // Ads completely disabled
     }
 
     public void OnUnityAdsReady(string placementId)
     {
-        if (showAdBool == true)
-        {
-            // If the ready Placement is rewarded, show the ad:
-            if (placementId == myPlacementId)
-            {
-                Advertisement.Show(myPlacementId);
-                showAdBool = false;
-            }
-        }
+        // Ads completely disabled
     }
 
 

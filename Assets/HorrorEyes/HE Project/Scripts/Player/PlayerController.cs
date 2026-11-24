@@ -231,12 +231,12 @@ public class PlayerController : MonoBehaviour {
         Vector3 newPos = new Vector3(cameraTransform.localPosition.x, newCamPos, cameraTransform.localPosition.z);
         cameraTransform.localPosition = Vector3.Lerp(cameraTransform.localPosition, newPos, Time.deltaTime *  lerpSpeed);
 
-        if(CrossPlatformInputManager.GetButtonDown("Run"))
+        if(CrossPlatformInputManager.GetButtonDown("Run") || Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift))
         {
             SetRun();
         }
 
-        if (CrossPlatformInputManager.GetButtonDown("Crouch"))
+        if (CrossPlatformInputManager.GetButtonDown("Crouch") || Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.LeftControl))
         {
             SetCrouch();
         }
@@ -272,8 +272,14 @@ public class PlayerController : MonoBehaviour {
 
     private void Movement()
     {
-        float inputX = CrossPlatformInputManager.GetAxis("Horizontal") * moveSpeed;
-        float inputY = CrossPlatformInputManager.GetAxis("Vertical") * moveSpeed;
+        float inputX = CrossPlatformInputManager.GetAxis("Horizontal");
+        float inputY = CrossPlatformInputManager.GetAxis("Vertical");
+
+        if (Mathf.Approximately(inputX, 0f)) inputX = Input.GetAxis("Horizontal");
+        if (Mathf.Approximately(inputY, 0f)) inputY = Input.GetAxis("Vertical");
+
+        inputX *= moveSpeed;
+        inputY *= moveSpeed;
 
         Vector3 forvardMove = transform.forward * inputY;
         Vector3 sideMove = transform.right * inputX;
@@ -303,8 +309,14 @@ public class PlayerController : MonoBehaviour {
 
     private void CameraRotation()
     {
-        float mouseX = CrossPlatformInputManager.GetAxis("Mouse X") * (mouseSensetivity * 2) * Time.deltaTime;
-        float mouseY = CrossPlatformInputManager.GetAxis("Mouse Y") * (mouseSensetivity * 2) * Time.deltaTime;
+        float rawMouseX = CrossPlatformInputManager.GetAxis("Mouse X");
+        float rawMouseY = CrossPlatformInputManager.GetAxis("Mouse Y");
+
+        if (Mathf.Approximately(rawMouseX, 0f)) rawMouseX = Input.GetAxis("Mouse X");
+        if (Mathf.Approximately(rawMouseY, 0f)) rawMouseY = Input.GetAxis("Mouse Y");
+
+        float mouseX = rawMouseX * (mouseSensetivity * 2) * Time.deltaTime;
+        float mouseY = rawMouseY * (mouseSensetivity * 2) * Time.deltaTime;
 
         clampX += mouseY;
         clampY += mouseX;
