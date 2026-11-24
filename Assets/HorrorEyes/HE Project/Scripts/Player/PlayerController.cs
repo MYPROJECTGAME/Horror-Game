@@ -51,6 +51,11 @@ public class PlayerController : MonoBehaviour {
     public Transform cameraTransform;
     private float clampX;
     private float clampY;
+    [Header("Look Smoothing")]
+    [Tooltip("Smoothing factor for camera rotation. Higher = sharper, lower = smoother")]
+    public float lookSmoothFactor = 30f;
+    private float m_currentMouseX = 0f;
+    private float m_currentMouseY = 0f;
 
     [Header("Camera Animations")]
     [Tooltip("Camera animation gameobject")]
@@ -278,17 +283,15 @@ public class PlayerController : MonoBehaviour {
         if (Mathf.Approximately(inputX, 0f)) inputX = Input.GetAxis("Horizontal");
         if (Mathf.Approximately(inputY, 0f)) inputY = Input.GetAxis("Vertical");
 
-        inputX *= moveSpeed;
-        inputY *= moveSpeed;
+        Vector2 inputDir = new Vector2(inputX, inputY);
+        if (inputDir.sqrMagnitude > 1f) inputDir.Normalize();
 
-        Vector3 forvardMove = transform.forward * inputY;
-        Vector3 sideMove = transform.right * inputX;
+        Vector3 forvardMove = transform.forward * (inputDir.y * moveSpeed);
+        Vector3 sideMove = transform.right * (inputDir.x * moveSpeed);
         characterController.SimpleMove(forvardMove + sideMove);
 
-
-
-        m_TPS_Player.SetFloat("DirectionY", inputX, 0.2f, Time.deltaTime);
-        m_TPS_Player.SetFloat("DirectionX", inputY, 0.2f, Time.deltaTime);
+        m_TPS_Player.SetFloat("DirectionY", inputDir.x * moveSpeed, 0.2f, Time.deltaTime);
+        m_TPS_Player.SetFloat("DirectionX", inputDir.y * moveSpeed, 0.2f, Time.deltaTime);
         m_TPS_Player.SetBool("Crouch", crouch);
         m_TPS_Player.SetBool("Run", m_running);
 
@@ -303,8 +306,6 @@ public class PlayerController : MonoBehaviour {
             playerMoving = false;
             cameraAnimation.Play(cameraIdleAnimName);         
         }
-
-
     }
 
     private void CameraRotation()
@@ -315,28 +316,46 @@ public class PlayerController : MonoBehaviour {
         if (Mathf.Approximately(rawMouseX, 0f)) rawMouseX = Input.GetAxis("Mouse X");
         if (Mathf.Approximately(rawMouseY, 0f)) rawMouseY = Input.GetAxis("Mouse Y");
 
-        float mouseX = rawMouseX * (mouseSensetivity * 2) * Time.deltaTime;
-        float mouseY = rawMouseY * (mouseSensetivity * 2) * Time.deltaTime;
+        float dt = Time.deltaTime;
 
-        clampX += mouseY;
-        clampY += mouseX;
+        // Target rotation rate
+        float targetMouseX = rawMouseX * (mouseSensetivity * 2f);
+        float targetMouseY = rawMouseY * (mouseSensetivity * 2f);
 
-        if (clampX > clampXaxis.y)
+        // Smooth filter to eliminate jitter and micro-stutters
+        if (lookSmoothFactor > 0f)
         {
-            clampX = clampXaxis.y;
-            mouseY = 0.0f;
-            ClampXAxis(clampXaxis.x);
+            float t = Mathf.Clamp01(dt * lookSmoothFactor);
+            m_currentMouseX = Mathf.Lerp(m_currentMouseX, targetMouseX, t);
+            m_currentMouseY = Mathf.Lerp(m_currentMouseY, targetMouseY, t);
         }
-        else if (clampX < clampXaxis.x)
+        else
         {
-            clampX = clampXaxis.x;
-            mouseY = 0.0f;
-            ClampXAxis(clampXaxis.y);
+            m_currentMouseX = targetMouseX;
+            m_currentMouseY = targetMouseY;
         }
 
-        m_TPS_Player.SetFloat("SpineAngle", clampX * 1.3f, 0.2f, Time.deltaTime);
-        cameraTransform.Rotate(Vector3.left * mouseY);
-        transform.Rotate(Vector3.up * mouseX);
+        if (Mathf.Abs(m_currentMouseX) < 0.001f) m_currentMouseX = 0f;
+        if (Mathf.Abs(m_currentMouseY) < 0.001f) m_currentMouseY = 0f;
+
+        float mouseX = m_currentMouseX * dt;
+        float mouseY = m_currentMouseY * dt;
+
+        // Pitch clamp (clean, smooth, no snapping)
+        clampX -= mouseY;
+        clampX = Mathf.Clamp(clampX, clampXaxis.x, clampXaxis.y);
+
+        // Set camera pitch directly without gimbal lock
+        cameraTransform.localRotation = Quaternion.Euler(clampX, 0f, 0f);
+
+        // Rotate player body horizontally
+        transform.Rotate(Vector3.up * mouseX, Space.World);
+
+        // Spine animation for third-person model
+        if (m_TPS_Player != null)
+        {
+            m_TPS_Player.SetFloat("SpineAngle", -clampX * 1.3f, 0.2f, dt);
+        }
     }
 
     private void ClampXAxis(float value)

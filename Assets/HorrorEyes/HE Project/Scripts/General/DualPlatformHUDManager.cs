@@ -33,6 +33,18 @@ public class DualPlatformHUDManager : MonoBehaviour
 
     private void Awake()
     {
+        // Maximize frame rate for ultra-smooth gameplay on both platforms
+        if (Application.isMobilePlatform)
+        {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = 60;
+        }
+        else
+        {
+            QualitySettings.vSyncCount = 1;
+            Application.targetFrameRate = 120;
+        }
+
         m_gameControll = GetComponent<GameControll>();
         if (m_gameControll == null) m_gameControll = FindObjectOfType<GameControll>();
 

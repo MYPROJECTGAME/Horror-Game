@@ -28,8 +28,8 @@ namespace UnityStandardAssets.CrossPlatformInput
         public string verticalAxisName = "Mouse Y";
         public float Xsensitivity = 1f;
         public float Ysensitivity = 1f;
-        [Tooltip("Smoothing factor for camera rotation. Higher = sharper, lower = smoother")]
-        public float smoothing = 28f;
+        [Tooltip("Smoothing factor for touch swipe")]
+        public float smoothing = 30f;
         public bool invertY = false;
 
         private CrossPlatformInputManager.VirtualAxis m_HorizontalVirtualAxis;
@@ -39,10 +39,10 @@ namespace UnityStandardAssets.CrossPlatformInput
         private bool m_Dragging;
         private int m_PointerId = -1;
 
-        private Vector2 m_AccumulatedDelta;
-        private Vector2 m_SmoothDelta;
+        private Vector2 m_CurrentFrameDelta;
+        private Vector2 m_SmoothVelocity;
 
-        // Base sensitivity scale calibrated for PlayerController's (mouseSensetivity * 2) * Time.deltaTime
+        // Base sensitivity scale calibrated for PlayerController
         private const float SENSITIVITY_SCALE = 0.0022f;
 
         void OnEnable()
@@ -88,7 +88,8 @@ namespace UnityStandardAssets.CrossPlatformInput
             {
                 m_Dragging = true;
                 m_PointerId = data.pointerId;
-                m_AccumulatedDelta = Vector2.zero;
+                m_CurrentFrameDelta = Vector2.zero;
+                m_SmoothVelocity = Vector2.zero;
             }
         }
 
@@ -96,7 +97,7 @@ namespace UnityStandardAssets.CrossPlatformInput
         {
             if (m_Dragging && data.pointerId == m_PointerId)
             {
-                m_AccumulatedDelta += data.delta;
+                m_CurrentFrameDelta += data.delta;
             }
         }
 
@@ -106,7 +107,7 @@ namespace UnityStandardAssets.CrossPlatformInput
             {
                 m_Dragging = false;
                 m_PointerId = -1;
-                m_AccumulatedDelta = Vector2.zero;
+                m_CurrentFrameDelta = Vector2.zero;
             }
         }
 
@@ -114,26 +115,27 @@ namespace UnityStandardAssets.CrossPlatformInput
         {
             float dt = Mathf.Max(Time.deltaTime, 0.0001f);
 
-            Vector2 target = m_Dragging ? m_AccumulatedDelta : Vector2.zero;
-            m_AccumulatedDelta = Vector2.zero;
+            // Convert frame delta into pixels per second velocity
+            Vector2 targetVelocity = m_Dragging ? (m_CurrentFrameDelta / dt) : Vector2.zero;
+            m_CurrentFrameDelta = Vector2.zero;
 
             if (smoothing > 0f)
             {
-                m_SmoothDelta = Vector2.Lerp(m_SmoothDelta, target, dt * smoothing);
+                float t = Mathf.Clamp01(dt * smoothing);
+                m_SmoothVelocity = Vector2.Lerp(m_SmoothVelocity, targetVelocity, t);
             }
             else
             {
-                m_SmoothDelta = target;
+                m_SmoothVelocity = targetVelocity;
             }
 
-            if (!m_Dragging && m_SmoothDelta.sqrMagnitude < 0.0001f)
+            if (!m_Dragging && m_SmoothVelocity.sqrMagnitude < 1f)
             {
-                m_SmoothDelta = Vector2.zero;
+                m_SmoothVelocity = Vector2.zero;
             }
 
-            // Output to virtual axis (velocity = delta / dt, so (velocity * dt) in PlayerController cancels dt)
-            float outX = (m_SmoothDelta.x / dt) * SENSITIVITY_SCALE * Xsensitivity;
-            float outY = (m_SmoothDelta.y / dt) * SENSITIVITY_SCALE * Ysensitivity * (invertY ? -1f : 1f);
+            float outX = m_SmoothVelocity.x * SENSITIVITY_SCALE * Xsensitivity;
+            float outY = m_SmoothVelocity.y * SENSITIVITY_SCALE * Ysensitivity * (invertY ? -1f : 1f);
 
             if (m_UseX && m_HorizontalVirtualAxis != null)
             {
@@ -158,8 +160,8 @@ namespace UnityStandardAssets.CrossPlatformInput
             }
             m_Dragging = false;
             m_PointerId = -1;
-            m_AccumulatedDelta = Vector2.zero;
-            m_SmoothDelta = Vector2.zero;
+            m_CurrentFrameDelta = Vector2.zero;
+            m_SmoothVelocity = Vector2.zero;
         }
     }
 }
